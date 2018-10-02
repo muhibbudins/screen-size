@@ -2,25 +2,71 @@ const fs = require('fs')
 const fetch = require('node-fetch')
 
 const generate = async (string) => {
+  /**
+   * Create bracket for result
+   */
   const result = []
-  const rep = await string.replace(/\n|\s{2}/g, '')
-  const res = await rep.match(/<tr[\s\S]*?<\/tr>/g)
-  const ret = await res.map(line => {
-    const get = line.match(/<td[\s\S]*?<\/td>/g)
+
+  /**
+   * Remove any new line and double space
+   */
+  const normalize = await string.replace(/\n|\s{2}/g, '')
+
+  /**
+   * Match any TR tag
+   */
+  const normalized = await normalize.match(/<tr[\s\S]*?<\/tr>/g)
+
+  /**
+   * Loop matching TR tag
+   */
+  await normalized.map(tableRow => {
+    /**
+     * Match all TD tag
+     */
+    const tableData = tableRow.match(/<td[\s\S]*?<\/td>/g)
+
+    /**
+     * Create temp variable
+     */
     const bracket = {}
 
-    if (get) {
-      return get.map(item => {
-        const regex = /<td class="(.*)">(.*)<\/td>/g
-        const sanitize = item.replace(/<span[\s\S]*?><\/span>|data.+=/g, '')
-        const res = regex.exec(sanitize)
+    /**
+     * If match a TD tag
+     */
+    if (tableData) {
+      /**
+       * Loop all TD tag
+       */
+      return tableData.map(item => {
+        /**
+         * Get class name and content on TD tag
+         */
+        const classContent = /<td class="(.*)">(.*)<\/td>/g
 
-        if (res && res[0]) {
-          const key = res[1].split(' ')[0]
-          bracket[key] = res[2]
+        /**
+         * Remove unuse attribute and content
+         */
+        const sanitize = item.replace(/<span[\s\S]*?><\/span>|data.+=/g, '')
+
+        /**
+         * Sanitize TD content
+         */
+        const content = classContent.exec(sanitize)
+
+        /**
+         * If has result, then push to temp variable
+         */
+        if (content && content[0]) {
+          const key = content[1].split(' ')[0]
+          bracket[key] = content[2]
         }
 
+        /**
+         * Send temp variable to result
+         */
         result.push(bracket)
+
         return
       })
     }
@@ -28,9 +74,15 @@ const generate = async (string) => {
     return
   })
 
+  /**
+   * Write temp file
+   */
   fs.writeFileSync('device.json', JSON.stringify(result, false, 2))
 }
 
+/**
+ * Scrap data from source
+ */
 fetch('http://screensiz.es/')
   .then(res => res.text())
   .then(string => {
