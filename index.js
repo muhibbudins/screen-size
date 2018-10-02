@@ -58,7 +58,7 @@ const generate = async (string) => {
          * If has result, then push to temp variable
          */
         if (content && content[0]) {
-          const key = content[1].split(' ')[0]
+          const key = content[1].split(' ')[0].replace(/-value/g, '')
           bracket[key] = content[2]
         }
 
